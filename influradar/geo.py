@@ -10,7 +10,9 @@ import urllib.request
 from functools import lru_cache
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parent.parent / "data"
+from .paths import data_dir, resources
+
+DATA = resources() / "data"
 UA = {"User-Agent": "influenszer-radar/0.2 (local marketing tool; contact via repo)"}
 _last_nominatim = 0.0
 LAST_ERROR = ""
@@ -133,7 +135,7 @@ def geocode(name: str, lang: str = "hu") -> dict | None:
 
 # --- Overpass: városok a körön belül ----------------------------------------------
 OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
-CACHE = DATA / "cache"
+CACHE = data_dir() / "cache"
 
 
 def _overpass(query: str) -> dict:

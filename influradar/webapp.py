@@ -18,7 +18,10 @@ from .taxonomy import (AGE_BUCKETS, CATEGORIES, GENDERS, INTERESTS, LIFESTYLES, 
 
 STORE = Store()
 JOBS: dict[str, dict] = {}
+from .paths import resources
+
 HTML_PATH = Path(__file__).resolve().parent / "ui.html"
+TEMPLATE_PATH = resources() / "data" / "import_sablon.csv"
 
 
 def _job(fn, *args, **kw) -> str:
@@ -175,8 +178,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/audit":
                 return self._json(STORE.audit())
             if u.path == "/api/template.csv":
-                p = Path(__file__).resolve().parent.parent / "data" / "import_sablon.csv"
-                return self._send(200, p.read_bytes(), "text/csv; charset=utf-8", {"Content-Disposition": 'attachment; filename="import_template.csv"'})
+                return self._send(200, TEMPLATE_PATH.read_bytes(), "text/csv; charset=utf-8", {"Content-Disposition": 'attachment; filename="import_template.csv"'})
             return self._json({"error": "not found"}, 404)
         except Exception as e:  # noqa: BLE001
             return self._json({"error": str(e), "trace": traceback.format_exc()[-600:]}, 500)
@@ -234,9 +236,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": str(e)}, 500)
 
 
-def serve(host="127.0.0.1", port=8790):
-    srv = ThreadingHTTPServer((host, port), Handler)
-    print(f"Influencer Radar → http://{host}:{port}   (Ctrl+C: stop)")
+def serve(host="127.0.0.1", port=8790, open_browser=False):
+    import socket
+    for p in range(port, port + 20):
+        try:
+            srv = ThreadingHTTPServer((host, p), Handler)
+            break
+        except OSError:
+            continue
+    else:
+        raise SystemExit(f"nincs szabad port {port}–{port + 19} / no free port")
+    url = f"http://{host}:{srv.server_address[1]}"
+    print(f"Influencer Radar → {url}   (Ctrl+C: stop)")
+    if open_browser:
+        import webbrowser
+        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

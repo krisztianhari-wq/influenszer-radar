@@ -4,9 +4,18 @@ Helyi, a saját gépeden futó **európai influenszer-kereső**. A folyamat: **1
 
 *Local, on-device **European influencer finder**: 1. pick any European place + radius → 2. collect only for that area (towns within the radius, country language + English) → 3. filter by demographics, psychographics and audience, save lists, export CSV. Nothing is preloaded per country; collections persist and can be reopened. Map, HU/EN UI, SQLite, audit log.*
 
-```
-./run.sh            # GUI: http://127.0.0.1:8790
-```
+## Futtatás / Running
+
+| Mód | Hogyan | Kell hozzá |
+|---|---|---|
+| **Kész app (ajánlott más gépre)** | [Releases](https://github.com/krisztianhari-wq/influenszer-radar/releases): zip kicsomagolás → dupla klikk az `InfluenszerRadar` fájlra → elindul a helyi szerver és megnyílik a böngésző. macOS: első indításnál jobb klikk → Megnyitás; Windows: SmartScreen „További információ → Futtatás mindenképp”. | semmi (Python sem) |
+| **Forrásból** | `git clone … && ./run.sh` → http://127.0.0.1:8790 | Python 3.10+ |
+| **Docker** | `docker build -t influenszer-radar . && docker run -p 8790:8790 -v radar-data:/data influenszer-radar` | Docker |
+| **Saját build** | `pip install -r requirements.txt pyinstaller && ./build_app.sh` → `dist/` | Python 3.10+ |
+
+A kész app az adatokat a felhasználói mappában tartja (macOS `~/Library/Application Support/InfluenszerRadar`, Windows `%APPDATA%\InfluenszerRadar`, Linux `~/.local/share/InfluenszerRadar`); az `INFLURADAR_DATA` környezeti változó átirányítja. A GitHub Actions minden `v*` címkére felépíti a macOS (Apple Silicon + Intel), Windows és Linux csomagot.
+
+*Ready-made app from Releases (no Python needed), or `./run.sh` from source, or Docker. Data lives in the user profile folder; `INFLURADAR_DATA` overrides it.*
 
 ## Szűrők
 

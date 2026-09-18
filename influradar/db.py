@@ -12,7 +12,9 @@ from typing import Any, Iterable
 from . import geo
 from .taxonomy import AGE_BUCKETS, TIERS
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "radar.sqlite"
+from .paths import data_dir
+
+DB_PATH = data_dir() / "radar.sqlite"
 
 LIST_FIELDS = ("categories", "interests", "values", "lifestyles", "tones", "audience_interests")
 DICT_FIELDS = ("audience_age", "audience_gender", "audience_locations")

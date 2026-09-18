@@ -1,0 +1,91 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -q -r requirements.txt
+      - run: python -m compileall -q influradar
+      - run: python -m influradar --version
+      - name: Smoke test (offline demo collection + search)
+        run: |
+          python -m influradar demo -n 50
+          python -m influradar search center=Debrecen radius_km=50 | head -3
+
+  app:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14,        label: macos-arm64 }
+          - { os: macos-15-intel,  label: macos-x86_64 }
+          - { os: windows-latest,  label: windows-x64 }
+          - { os: ubuntu-22.04,    label: linux-x86_64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Build app
+        shell: bash
+        run: |
+          python -m pip install -q -r requirements.txt pyinstaller
+          ./build_app.sh
+          ls -la dist
+      - name: Smoke test binary
+        shell: bash
+        run: |
+          case "${{ matrix.os }}" in
+            windows*) B=dist/app/InfluenszerRadar/InfluenszerRadar.exe ;;
+            macos*)   B=dist/app/InfluenszerRadar.app/Contents/MacOS/InfluenszerRadar; [ -x "$B" ] || B=dist/app/InfluenszerRadar/InfluenszerRadar ;;
+            *)        B=dist/app/InfluenszerRadar/InfluenszerRadar ;;
+          esac
+          "$B" --version
+          "$B" stats
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InfluenszerRadar-${{ matrix.label }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check, app]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - run: ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true
+          body: |
+            **Influenszer Radar / Influencer Radar** – European influencer finder · crafted by sadrobot
+
+            Kicsomagolás után dupla klikk: elindul a helyi szerver és megnyílik a böngésző. / Unzip, double-click: the local server starts and your browser opens.
+
+            | File | Platform |
+            |---|---|
+            | `InfluenszerRadar-macos-arm64.zip` | macOS Apple Silicon (első indítás: jobb klikk → Megnyitás / right-click → Open) |
+            | `InfluenszerRadar-macos-x86_64.zip` | macOS Intel |
+            | `InfluenszerRadar-windows-x64.zip` | Windows 10/11 (SmartScreen: „További információ → Futtatás”) |
+            | `InfluenszerRadar-linux-x86_64.tar.gz` | Linux glibc ≥ 2.35 |
+
+            Adatok / data: macOS `~/Library/Application Support/InfluenszerRadar`, Windows `%APPDATA%\InfluenszerRadar`, Linux `~/.local/share/InfluenszerRadar`.
+            Docker: `docker run -p 8790:8790 -v radar:/data ghcr.io/krisztianhari-wq/influenszer-radar` (build: `docker build -t influenszer-radar .`).

@@ -4,3 +4,5 @@ data/radar.sqlite
 data/cache/
 .env
 .DS_Store
+build/
+dist/

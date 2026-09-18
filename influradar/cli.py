@@ -5,15 +5,20 @@ import argparse
 import json
 import sys
 
-from . import demo, llm
+from . import __version__, demo, llm
 from .db import Store, import_file, search, to_csv
 
 
 def main(argv=None):
+    if argv is None and len(sys.argv) == 1 and getattr(sys, "frozen", False):
+        argv = ["gui", "--open"]  # dupla-klikk: GUI + böngésző
     ap = argparse.ArgumentParser(prog="influradar", description="Influenszer Radar – helyi influenszer-kereső")
     sub = ap.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("gui", help="webes felület indítása")
     g.add_argument("--port", type=int, default=8790)
+    g.add_argument("--host", default="127.0.0.1", help="pl. 0.0.0.0 konténerben / LAN-on – csak megbízható hálózaton!")
+    g.add_argument("--open", action="store_true", help="böngésző megnyitása / open browser")
+    ap.add_argument("--version", action="version", version=f"influradar {__version__}")
     d = sub.add_parser("demo", help="szintetikus demo-adatok betöltése")
     d.add_argument("-n", type=int, default=600)
     i = sub.add_parser("import", help="CSV/JSON import")
@@ -41,7 +46,7 @@ def main(argv=None):
 
     if a.cmd == "gui":
         from .webapp import serve
-        serve(port=a.port)
+        serve(host=a.host, port=a.port, open_browser=a.open)
     elif a.cmd == "demo":
         print(st.upsert(demo.generate(a.n), source="demo"), "demo rekord betöltve")
     elif a.cmd == "import":
