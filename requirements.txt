@@ -1,0 +1,2 @@
+ddgs>=9
+anthropic>=1.7

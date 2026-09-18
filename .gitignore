@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+data/radar.sqlite
+data/cache/
+.env
+.DS_Store

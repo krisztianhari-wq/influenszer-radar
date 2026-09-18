@@ -1,0 +1,276 @@
+<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Influenszer Radar</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--ink:#1F2933;--muted:#7B8794;--accent:#0F766E;--accent2:#E0533D;--line:#E4E7EB;--bg:#F7F8F7;--card:#fff;--soft:#EEF4F3}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,'Inter','Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}button{font:inherit}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1100}
+.logo b{font-weight:600;font-size:18px;letter-spacing:-.01em}.logo span{display:block;font-size:11px;color:var(--muted)}
+.tabs{display:flex;gap:4px}.tabs button{border:0;background:transparent;padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500}.tabs button.on{background:var(--soft);color:var(--accent)}
+.langs button{border:0;background:none;font-size:11px;letter-spacing:.1em;color:var(--muted);cursor:pointer;margin-left:8px;font-weight:600}.langs button.on{color:var(--accent)}
+main{display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 57px)}
+aside{border-right:1px solid var(--line);background:#fff;padding:18px 18px 40px;overflow-y:auto;max-height:calc(100vh - 57px);position:sticky;top:57px}
+section.panel{padding:18px 22px 60px}
+h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+h3:first-child{margin-top:0}h3 small{font-weight:400;letter-spacing:0;text-transform:none;font-size:11px}
+label{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;color:var(--ink);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;background:#fff;color:var(--ink);transition:.12s}
+.chip:hover{border-color:var(--accent)}.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}.chip.tg{background:#FFF4F1;border-color:#F3C9C0;color:#9A3B2C}.chip.tg.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:999px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500}
+.btn:hover{opacity:.92}.btn.ghost{background:#fff;color:var(--accent)}.btn.sm{padding:5px 11px;font-size:12px}.btn.danger{border-color:#B23A48;color:#B23A48;background:#fff}.btn.warm{background:var(--accent2);border-color:var(--accent2)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.bar .grow{flex:1}.count{font-size:22px;font-weight:600}.count small{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+#map{height:340px;border-radius:14px;border:1px solid var(--line);margin-bottom:14px;background:#e9eef0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap}tr.r{cursor:pointer}tr.r:hover td{background:var(--soft)}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--soft);color:#334E4B;margin:1px 2px 1px 0}.tag.p{background:#EEF2F5;color:#52606D;text-transform:uppercase;letter-spacing:.05em;font-size:10px}
+.tag.demo{background:#FFF1DC;color:#9C5B10}.muted{color:var(--muted);font-size:12px}.right{text-align:right}
+.drawer{position:fixed;top:57px;right:0;width:440px;max-width:100vw;height:calc(100vh - 57px);background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.06);padding:22px;overflow-y:auto;transform:translateX(100%);transition:.2s;z-index:1200}
+.drawer.open{transform:none}.drawer h2{margin:0 0 2px;font-size:19px;font-weight:600}.drawer .x{position:absolute;right:16px;top:14px;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.dist{margin:4px 0}.dist div{display:flex;align-items:center;gap:8px;font-size:12px;margin:2px 0}.dist span{width:64px;color:var(--muted)}.dist i{display:block;height:8px;background:var(--accent);border-radius:4px;opacity:.85}.dist b{font-weight:500;width:40px;text-align:right}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:4px 10px;font-size:13px;margin:12px 0}.kv span{color:var(--muted)}
+pre{background:#F3F5F5;border-radius:10px;padding:12px;font-size:12px;overflow:auto;max-height:260px;white-space:pre-wrap}
+.note{background:#FFFBF3;border:1px dashed #D9B98A;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#7B6A4B;margin-bottom:12px}
+.hidden{display:none}.ac{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.08);z-index:1150;max-height:260px;overflow:auto}.ac div{padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)}.ac div:hover{background:var(--soft)}.ac small{display:block;color:var(--muted)}footer{color:var(--muted);font-size:11px;text-align:center;padding:20px}
+.src-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:1300;opacity:0;transition:.2s}.toast.on{opacity:1}
+@media (max-width:900px){main{grid-template-columns:1fr}aside{position:static;max-height:none}}
+</style></head><body>
+<header><div class="logo"><b>Influenszer Radar</b><span id="tagline"></span></div>
+<nav class="tabs"><button data-tab="search" class="on"></button><button data-tab="sources"></button><button data-tab="lists"></button><button data-tab="audit"></button></nav>
+<div class="langs"><button data-lang="hu" class="on">HU</button><button data-lang="en">EN</button></div></header>
+
+<main>
+<aside id="filters">
+  <h3 data-t="step_place"></h3>
+  <div style="position:relative"><input type="text" id="place" autocomplete="off"><div id="placeList" class="ac hidden"></div></div>
+  <div id="placeChosen" class="muted" style="margin:6px 0 2px"></div>
+  <label><span data-t="radius"></span>: <b id="radiusv">30</b> km</label><input type="range" id="radius" min="5" max="250" step="5" value="30">
+  <label data-t="prev"></label><select id="collSel"><option value="" data-t="all_data"></option></select>
+  <div id="townsBox" class="muted" style="font-size:11.5px;margin-top:4px"></div>
+
+  <h3 data-t="step_collect"></h3>
+  <div class="note" style="margin-bottom:8px" data-t="col_hint"></div>
+  <label data-t="sources"></label>
+  <label style="color:var(--ink)"><input type="checkbox" id="srcDdg" checked> <span data-t="src_ddg_s"></span></label>
+  <label style="color:var(--ink)"><input type="checkbox" id="srcDemo"> <span data-t="src_demo_s"></span></label>
+  <label style="color:var(--ink)" id="srcModashRow"><input type="checkbox" id="srcModash"> <span data-t="src_modash_s"></span> <span class="tag" id="modashState2"></span></label>
+  <label data-t="platform"></label><div class="chips" id="dplatforms"></div>
+  <div class="row2"><div><label data-t="max_towns"></label><input type="number" id="maxTowns" value="6" min="1" max="30"></div><div><label data-t="extra_terms"></label><input type="text" id="dterms" placeholder="fitness, gastro…"></div></div>
+  <label style="color:var(--ink)"><input type="checkbox" id="autoEnrich"> <span data-t="auto_enrich"></span></label>
+  <div class="bar" style="margin-top:8px"><button class="btn warm" id="collectBtn" data-t="collect"></button><button class="btn ghost sm hidden" id="stopBtn" data-t="stop"></button></div>
+  <pre id="collectLog" class="hidden" style="max-height:150px;font-size:11px"></pre>
+
+  <h3 data-t="step_filter"></h3>
+  <label data-t="region"></label><div class="chips" id="countries"></div>
+  <label data-t="county"></label><div class="chips" id="counties"></div>
+
+<h3><span data-t="f_target"></span><small class="muted" data-t="tg_hint"></small></h3><div class="chips" id="tgs"></div>
+
+  <h3 data-t="f_basic"></h3>
+  <label data-t="platform"></label><div class="chips" id="platforms"></div>
+  <label data-t="tier"></label><div class="chips" id="tiers"></div>
+  <div class="row3"><div><label data-t="fmin"></label><input type="number" id="followers_min" min="0" step="1000"></div><div><label data-t="fmax"></label><input type="number" id="followers_max" min="0" step="1000"></div><div><label data-t="ermin"></label><input type="number" id="er_min" min="0" step="0.5"></div></div>
+  <label data-t="q"></label><input type="text" id="q" placeholder="név, handle, bio…">
+
+  <h3 data-t="f_demo"></h3>
+  <div class="row3"><div><label data-t="gender"></label><select id="gender"><option value=""></option></select></div><div><label data-t="agemin"></label><input type="number" id="age_min" min="13" max="90"></div><div><label data-t="agemax"></label><input type="number" id="age_max" min="13" max="90"></div></div>
+  <label data-t="language"></label><select id="language"><option value="">—</option><option value="hu">magyar</option><option value="en">english</option><option value="de">deutsch</option></select>
+
+  <h3><span data-t="f_psy"></span><small><label style="display:inline;margin:0"><input type="checkbox" id="match_all"> <span data-t="match_all"></span></label></small></h3>
+  <label data-t="categories"></label><div class="chips" id="categories"></div>
+  <label data-t="interests"></label><div class="chips" id="interests"></div>
+  <label data-t="values"></label><div class="chips" id="values"></div>
+  <label data-t="lifestyles"></label><div class="chips" id="lifestyles"></div>
+  <label data-t="tones"></label><div class="chips" id="tones"></div>
+
+  <h3 data-t="f_aud"></h3>
+  <div class="row2"><div><label data-t="aud_age"></label><select id="aud_age"><option value="">—</option></select></div><div><label data-t="min_share"></label><input type="number" id="aud_age_min" min="0" max="100" placeholder="pl. 35"></div></div>
+  <div class="row2"><div><label data-t="aud_gender"></label><select id="aud_gender"><option value="">—</option></select></div><div><label data-t="min_share"></label><input type="number" id="aud_gender_min" min="0" max="100" placeholder="pl. 60"></div></div>
+  <div class="row2"><div><label data-t="aud_loc"></label><input type="text" id="aud_loc" placeholder="Debrecen"></div><div><label data-t="min_share"></label><input type="number" id="aud_loc_min" min="0" max="100" placeholder="pl. 30"></div></div>
+  <label data-t="aud_interests"></label><div class="chips" id="audience_interests"></div>
+  <label style="margin-top:10px"><input type="checkbox" id="enriched_only"> <span data-t="enriched_only"></span></label>
+  <div style="margin-top:16px;display:flex;gap:8px"><button class="btn" id="run" data-t="run"></button><button class="btn ghost" id="reset" data-t="reset"></button></div>
+</aside>
+
+<section class="panel" id="tab-search">
+  <div class="bar"><div class="count"><span id="total">0</span><small id="scope"></small></div><div class="grow"></div>
+    <select id="sort" style="width:auto"><option value="followers">↓ followers</option><option value="er">↓ ER</option><option value="distance">↑ km</option><option value="name">A–Z</option></select>
+    <button class="btn ghost sm" id="exportCsv">CSV</button><button class="btn sm" id="saveList" data-t="save_list"></button><button class="btn sm warm" id="enrichBtn" data-t="enrich_results"></button></div>
+  <div id="map"></div>
+  <div class="card" style="padding:0;overflow:auto"><table id="results"><thead><tr>
+    <th data-s="name" data-t="th_name"></th><th data-t="th_platform"></th><th data-t="th_city"></th><th class="right" data-s="distance">km</th><th class="right" data-s="followers" data-t="th_followers"></th><th class="right" data-s="er">ER %</th><th data-t="th_cats"></th><th data-t="th_aud"></th></tr></thead><tbody></tbody></table></div>
+  <div class="note" id="emptyNote"></div>
+</section>
+
+<section class="panel hidden" id="tab-sources">
+  <div class="note" data-t="src_note"></div>
+  <div class="src-grid">
+    <div class="card"><h3 data-t="src_import"></h3><p class="muted" data-t="src_import_p"></p>
+      <input type="file" id="file" accept=".csv,.json"><div class="bar" style="margin-top:10px"><button class="btn sm" id="importBtn" data-t="import"></button><a class="btn ghost sm" href="/api/template.csv" data-t="template"></a></div></div>
+    <div class="card"><h3 data-t="src_enrich"></h3><p class="muted" id="llmInfo"></p>
+      <div class="bar"><input type="number" id="enrichMax" value="30" style="width:90px"><button class="btn sm warm" id="enrichAll" data-t="enrich_unlabeled"></button></div></div>
+    <div class="card"><h3>Modash Discovery API <span class="tag" id="modashState"></span></h3><p class="muted" data-t="src_modash_p"></p></div>
+    <div class="card"><h3 data-t="src_manual"></h3><p class="muted" data-t="src_manual_p"></p>
+      <div class="row2"><div><label data-t="platform"></label><select id="mnplat"></select></div><div><label>handle</label><input type="text" id="mnhandle"></div></div>
+      <div class="row2"><div><label data-t="th_name"></label><input type="text" id="mnname"></div><div><label data-t="center"></label><input type="text" id="mncity"></div></div>
+      <label>Bio</label><textarea id="mnbio" rows="2"></textarea>
+      <div class="bar" style="margin-top:10px"><button class="btn sm" id="manualAdd" data-t="add"></button></div></div>
+  </div>
+  <div class="card"><h3 data-t="job_log"></h3><pre id="joblog">—</pre></div>
+  <div class="card"><h3 data-t="stats"></h3><pre id="stats"></pre></div>
+</section>
+
+<section class="panel hidden" id="tab-lists"><div id="listsBox"></div></section>
+<section class="panel hidden" id="tab-audit"><div class="card"><pre id="auditBox"></pre></div></section>
+</main>
+
+<div class="drawer" id="drawer"><button class="x" id="closeDrawer">×</button><div id="drawerBody"></div></div>
+<div class="toast" id="toast"></div>
+<footer>Influenszer Radar · crafted by sadrobot · <span data-t="foot"></span></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const T={hu:{tagline:'európai influenszer-kereső · helyszín → gyűjtés → szűrés',step_place:'1 · Helyszín',place_ph:'Város bárhol Európában: Graz, Kraków, Lyon…',step_collect:'2 · Gyűjtés a körzetben',sources:'Források',src_ddg_s:'DuckDuckGo (valós jelöltek)',src_demo_s:'Demo (szintetikus)',src_modash_s:'Modash API',max_towns:'Max. város a körben',auto_enrich:'gyűjtés után LLM-címkézés',collect:'Gyűjtés indítása',collecting:'Gyűjtés folyik…',stop:'Leállítás',prev:'Korábbi gyűjtések',all_data:'— minden adat (nincs körzet) —',scope_all:'minden adat',no_place:'Válassz helyszínt a listából, majd indítsd a gyűjtést.',step_filter:'3 · Szűrés',towns_in:'Városok a körben',del_collection:'Gyűjtés törlése (profilokkal)',col_hint:'A gyűjtés csak a kiválasztott körzet városaira fut; nem előre az egész országra.',tab_search:'Keresés',tab_sources:'Adatforrások',tab_lists:'Listák',tab_audit:'Napló',
+f_loc:'Hely',center:'Település',radius:'Sugár',county:'Megye / körzet',region:'Ország',f_target:'Célcsoport',tg_hint:'egy klikk = több szűrő',f_basic:'Alap',platform:'Platform',tier:'Méret',fmin:'Követő min',fmax:'Követő max',ermin:'ER % min',q:'Szabad szó',
+f_demo:'Influenszer demográfia',gender:'Nem',agemin:'Kor min',agemax:'Kor max',language:'Nyelv',f_psy:'Pszichográfia',match_all:'mind kell',categories:'Tartalmi kategória',interests:'Érdeklődés',values:'Értékek',lifestyles:'Életstílus',tones:'Hangnem',
+f_aud:'Közönség (célközönség)',aud_age:'Korcsoport',min_share:'min. arány %',aud_gender:'Nem',aud_loc:'Közönség helye',aud_interests:'Közönség érdeklődése',enriched_only:'csak címkézett (dúsított) profilok',run:'Szűrés',reset:'Alaphelyzet',
+save_list:'Mentés listába',enrich_results:'Találatok dúsítása (LLM)',th_name:'Név / handle',th_platform:'Platform',th_city:'Település',th_followers:'Követő',th_cats:'Kategória · életstílus',th_aud:'Közönség',
+src_note:'A gyűjtés a Keresés fülön, a helyszín kiválasztása után indul. Influenszer-adatokra nincs ingyenes hivatalos API, a platformok scrapelése ToS-sértő. Ingyenes út: DuckDuckGo-felderítés az ország nyelvén + angolul (nyilvános profil-URL + snippet), majd LLM-címkézés. Pontos közönség-demográfiához fizetős adatszolgáltató exportját importáld CSV-ben, vagy add meg a Modash-kulcsot.',
+src_demo:'Demo-adatok',src_demo_p:'Szintetikus, jelölt profilok (handle *_demo) a szűrők kipróbálásához. Nem valós személyek.',load:'Betöltés',delete_demo:'Demo törlése',
+src_ddg:'Ingyenes felderítés (DuckDuckGo)',src_ddg_p:'site:instagram.com / tiktok.com / youtube.com keresés a településre. Eredmény: jelöltek követőszám-becsléssel, ha a snippetben szerepel. ~1–3 perc.',extra_terms:'Extra kulcsszavak (vesszővel)',discover:'Felderítés indítása',delete_ddg:'DDG-jelöltek törlése',
+src_import:'CSV / JSON import',src_import_p:'Bármely adatszolgáltató exportja. Listák pontosvesszővel, eloszlások „18-24:40;25-34:35” alakban. Város → megye/koordináta automatikus.',import:'Import',template:'Sablon CSV',
+src_enrich:'LLM-dúsítás',enrich_unlabeled:'Címkézetlenek dúsítása',src_modash_p:'Fizetős Discovery API. MODASH_API_KEY a .env-ben, utána a Keresés fülön forrásként pipálható; a gyűjtés a körzet 3 legnagyobb városára kérdez.',modash_report:'részletes közönség-riport is (extra kredit/profil)',fetch:'Lekérés',
+src_manual:'Kézi felvitel',src_manual_p:'Egy ismert profil gyors rögzítése; a dúsítás utána címkézi.',add:'Hozzáadás',job_log:'Futó feladat',stats:'Statisztika',foot:'csak helyben fut · minden művelet naplózva',
+no_results:'Nincs találat ebben a körzetben. Indíts gyűjtést (2. lépés), válassz korábbi gyűjtést, vagy lazíts a szűrőkön.',within:'km-en belül',in_city:'településen',all:'összes',saved:'Lista mentve',list_name:'Lista neve',delete:'Törlés',open:'Megnyitás',
+d_followers:'Követő',d_er:'ER',d_views:'Átl. nézettség',d_lang:'Nyelv',d_gender:'Nem',d_age:'Kor',d_price:'Becsült ár',d_contact:'Kapcsolat',d_source:'Forrás',d_dist:'Távolság',aud_age_h:'Közönség kor',aud_gender_h:'Közönség nem',aud_loc_h:'Közönség helye',enrich_one:'Dúsítás (LLM)',remove:'Profil törlése'},
+en:{tagline:'European influencer finder · place → collect → filter',step_place:'1 · Location',place_ph:'Any city in Europe: Graz, Kraków, Lyon…',step_collect:'2 · Collect in this area',sources:'Sources',src_ddg_s:'DuckDuckGo (real candidates)',src_demo_s:'Demo (synthetic)',src_modash_s:'Modash API',max_towns:'Max. towns in radius',auto_enrich:'LLM labelling after collection',collect:'Start collection',collecting:'Collecting…',stop:'Stop',prev:'Previous collections',all_data:'— all data (no area) —',scope_all:'all data',no_place:'Pick a place from the list, then start the collection.',step_filter:'3 · Filter',towns_in:'Towns in radius',del_collection:'Delete collection (with profiles)',col_hint:'Collection runs only for the towns of the chosen area, never for a whole country up front.',tab_search:'Search',tab_sources:'Data sources',tab_lists:'Lists',tab_audit:'Audit',
+f_loc:'Location',center:'Settlement',radius:'Radius',county:'County / district',region:'Country',f_target:'Target group',tg_hint:'one click = several filters',f_basic:'Basics',platform:'Platform',tier:'Tier',fmin:'Followers min',fmax:'Followers max',ermin:'ER % min',q:'Free text',
+f_demo:'Influencer demographics',gender:'Gender',agemin:'Age min',agemax:'Age max',language:'Language',f_psy:'Psychographics',match_all:'match all',categories:'Content category',interests:'Interests',values:'Values',lifestyles:'Lifestyle',tones:'Tone',
+f_aud:'Audience',aud_age:'Age bucket',min_share:'min. share %',aud_gender:'Gender',aud_loc:'Audience location',aud_interests:'Audience interests',enriched_only:'labelled (enriched) profiles only',run:'Filter',reset:'Reset',
+save_list:'Save as list',enrich_results:'Enrich results (LLM)',th_name:'Name / handle',th_platform:'Platform',th_city:'City',th_followers:'Followers',th_cats:'Category · lifestyle',th_aud:'Audience',
+src_note:'Collection starts on the Search tab after picking a place. There is no free official API for influencer data and scraping the platforms violates their ToS. Free path: DuckDuckGo discovery in the country language + English (public profile URL + snippet), then LLM labelling. For accurate audience demographics import a paid provider export as CSV, or set a Modash key.',
+src_demo:'Demo data',src_demo_p:'Synthetic, marked profiles (handle *_demo) to try the filters. Not real people.',load:'Load',delete_demo:'Delete demo',
+src_ddg:'Free discovery (DuckDuckGo)',src_ddg_p:'site:instagram.com / tiktok.com / youtube.com search for the settlement. Result: candidates with follower estimate if present in the snippet. ~1–3 min.',extra_terms:'Extra keywords (comma-separated)',discover:'Start discovery',delete_ddg:'Delete DDG candidates',
+src_import:'CSV / JSON import',src_import_p:'Any provider export. Lists with semicolons, distributions as “18-24:40;25-34:35”. City → county/coordinates automatic.',import:'Import',template:'Template CSV',
+src_enrich:'LLM enrichment',enrich_unlabeled:'Enrich unlabelled',src_modash_p:'Paid Discovery API. Set MODASH_API_KEY in .env, then tick it as a source on the Search tab; collection queries the 3 largest towns of the area.',modash_report:'also fetch full audience report (extra credit/profile)',fetch:'Fetch',
+src_manual:'Manual entry',src_manual_p:'Quickly record a known profile; enrichment labels it afterwards.',add:'Add',job_log:'Running job',stats:'Statistics',foot:'runs locally only · every action logged',
+no_results:'No results in this area. Start a collection (step 2), pick a previous collection, or relax the filters.',within:'km radius',in_city:'in town',all:'all',saved:'List saved',list_name:'List name',delete:'Delete',open:'Open',
+d_followers:'Followers',d_er:'ER',d_views:'Avg. views',d_lang:'Language',d_gender:'Gender',d_age:'Age',d_price:'Est. price',d_contact:'Contact',d_source:'Source',d_dist:'Distance',aud_age_h:'Audience age',aud_gender_h:'Audience gender',aud_loc_h:'Audience location',enrich_one:'Enrich (LLM)',remove:'Delete profile'}};
+let lang=localStorage.getItem('lang')||'hu', META=null, RESULTS=[], map, layer, circle, PLACE=null, COLL=null, FACETS={county:{},country:{}}, JOB=null;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], t=k=>(T[lang][k]??k);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n==null?'':Number(n).toLocaleString(lang==='hu'?'hu-HU':'en-GB');
+const toast=m=>{const e=$('#toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2600)};
+const api=async(u,o={})=>{const r=await fetch(u,o.body?{method:o.method||'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o.body)}:o);const j=await r.json();if(j.error)throw new Error(j.error);return j};
+
+function applyLang(){document.documentElement.lang=lang;$$('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));$('#tagline').textContent=t('tagline');
+ $$('.tabs button').forEach(b=>b.textContent=t('tab_'+b.dataset.tab));$$('.langs button').forEach(b=>b.classList.toggle('on',b.dataset.lang===lang));}
+
+function chips(id,items,cls='',single=false){const box=$('#'+id);box.innerHTML='';items.forEach(it=>{const b=document.createElement('button');b.className='chip '+cls;b.dataset.key=it.key;b.textContent=it.label;b.title=it.key;
+ b.onclick=()=>{if(single)box.querySelectorAll('.chip').forEach(c=>c!==b&&c.classList.remove('on'));b.classList.toggle('on');if(cls==='tg')applyTarget(it,b.classList.contains('on'));else run();};box.appendChild(b)});}
+const sel=id=>$$('#'+id+' .chip.on').map(c=>c.dataset.key);
+function setChips(id,keys){$$('#'+id+' .chip').forEach(c=>c.classList.toggle('on',keys.includes(c.dataset.key)))}
+
+async function loadMeta(){META=await api('/api/meta?lang='+lang);
+ chips('tgs',META.target_groups,'tg');renderCollSel();$('#modashState2').textContent=META.modash?'✓':(lang==='hu'?'nincs kulcs':'no key');$('#srcModash').disabled=!META.modash;chips('platforms',META.platforms.map(p=>({key:p,label:p})));chips('dplatforms',['instagram','tiktok','youtube','facebook'].map(p=>({key:p,label:p})));setChips('dplatforms',['instagram','tiktok','youtube']);
+ chips('tiers',Object.entries(META.tiers).map(([k,[lo,hi]])=>({key:k,label:`${k} ${lo>=1e6?'1M+':fmt(lo/1000)+'k–'+(hi>=1e6?'1M':fmt(hi/1000)+'k')}`})));
+ ['categories','interests','values','lifestyles','tones'].forEach(k=>chips(k,META[k]));chips('audience_interests',META.interests);
+ $('#gender').innerHTML='<option value="">—</option>'+META.genders.map(g=>`<option value="${g.key}">${esc(g.label)}</option>`).join('');
+ $('#aud_gender').innerHTML='<option value="">—</option>'+META.genders.filter(g=>g.key!=='other').map(g=>`<option value="${g.key}">${esc(g.label)}</option>`).join('');
+ $('#aud_age').innerHTML='<option value="">—</option>'+META.age_buckets.map(a=>`<option>${a}</option>`).join('');
+ $('#mnplat').innerHTML=META.platforms.map(p=>`<option>${p}</option>`).join('');
+ $('#stats').textContent=JSON.stringify(META.stats,null,1);$('#llmInfo').textContent=(lang==='hu'?'Elérhető hátterek (sorrendben): ':'Available backends (in order): ')+META.llm_backends.join(' → ');
+ $('#modashState').textContent=META.modash?'API key ✓':(lang==='hu'?'nincs kulcs':'no key');}
+
+function renderCollSel(){const sel=$('#collSel');const cur=COLL;sel.innerHTML=`<option value="">${t('all_data')}</option>`+(META.collections||[]).map(c=>`<option value="${c.id}">#${c.id} ${esc(c.label)} · ${c.count} · ${c.sources.join('+')}${c.status!=='done'?' · '+c.status:''}</option>`).join('');sel.value=cur||''}
+function setPlace(p){PLACE=p;$('#place').value=p.name;$('#placeChosen').innerHTML=`📍 ${esc(p.display||p.name)} <span class="tag p">${esc(p.country||'')}</span>`;$('#placeList').classList.add('hidden');loadTowns();run()}
+let acT;$('#place').addEventListener('input',()=>{clearTimeout(acT);const q=$('#place').value.trim();if(q.length<2){$('#placeList').classList.add('hidden');return}acT=setTimeout(async()=>{const ps=await api('/api/places?q='+encodeURIComponent(q)+'&lang='+lang);const box=$('#placeList');box.innerHTML=ps.map((p,i)=>`<div data-i="${i}"><b>${esc(p.name)}</b> <span class="tag p">${esc(p.country||'')}</span><small>${esc(p.display||'')}</small></div>`).join('')||`<div class="muted">—</div>`;box.classList.remove('hidden');box.querySelectorAll('[data-i]').forEach(d=>d.onclick=()=>{COLL=null;$('#collSel').value='';setPlace(ps[+d.dataset.i])})},380)});
+document.addEventListener('click',e=>{if(!e.target.closest('#place,#placeList'))$('#placeList').classList.add('hidden')});
+let townsT;function loadTowns(){clearTimeout(townsT);if(!PLACE)return;townsT=setTimeout(async()=>{const r=await api(`/api/towns?lat=${PLACE.lat}&lon=${PLACE.lon}&radius_km=${$('#radius').value}&limit=${$('#maxTowns').value}`);$('#townsBox').textContent=(r.towns.length?t('towns_in')+': '+r.towns.map(x=>x.name).join(', '):'')+(r.error?' ⚠ '+r.error:'')},600)}
+$('#collSel').onchange=()=>{const id=$('#collSel').value;COLL=id?+id:null;const c=(META.collections||[]).find(x=>x.id===COLL);if(c){PLACE={name:c.label.split(' · ')[0],lat:c.lat,lon:c.lon,country:c.country,display:c.label};$('#place').value=PLACE.name;$('#placeChosen').innerHTML=`📍 ${esc(c.label)} <span class="tag p">${esc(c.country||'')}</span> <button class="btn sm danger" id="delColl">${t('del_collection')}</button>`;$('#radius').value=c.radius_km;$('#radiusv').textContent=c.radius_km;$('#townsBox').textContent=t('towns_in')+': '+c.towns.map(x=>x.name).join(', ');$('#delColl').onclick=async()=>{if(!confirm('?'))return;await fetch('/api/collections/'+COLL,{method:'DELETE'});COLL=null;PLACE=null;$('#placeChosen').textContent='';$('#place').value='';await loadMeta();run()}}else{PLACE=null;$('#placeChosen').textContent='';$('#place').value='';$('#townsBox').textContent=''}run()};
+$('#collectBtn').onclick=async()=>{if(!PLACE){toast(t('no_place'));return}const sources=[$('#srcDdg').checked&&'ddg',$('#srcDemo').checked&&'demo',$('#srcModash').checked&&'modash'].filter(Boolean);if(!sources.length){toast(t('sources'));return}
+ const body={lat:PLACE.lat,lon:PLACE.lon,name:PLACE.name,name_local:PLACE.name_local,country:PLACE.country,county:PLACE.county,radius_km:+$('#radius').value,sources,platforms:sel('dplatforms'),terms:$('#dterms').value.split(',').map(x=>x.trim()).filter(Boolean),max_towns:+$('#maxTowns').value,enrich:$('#autoEnrich').checked};
+ const j=await api('/api/collect',{body});JOB=j.job;$('#collectBtn').textContent=t('collecting');$('#collectBtn').disabled=true;$('#stopBtn').classList.remove('hidden');$('#collectLog').classList.remove('hidden');
+ const res=await waitJob(j.job,$('#collectLog'));$('#collectBtn').textContent=t('collect');$('#collectBtn').disabled=false;$('#stopBtn').classList.add('hidden');
+ await loadMeta();if(res.status==='done'&&res.result){COLL=res.result.collection_id;renderCollSel()}else{COLL=(META.collections[0]||{}).id||null;renderCollSel()}run()};
+$('#stopBtn').onclick=()=>JOB&&api('/api/jobs/'+JOB+'/stop',{body:{}});
+function applyTarget(tg,on){const f=tg.filters;if(!on){['categories','interests','values','lifestyles','tones','platforms'].forEach(k=>setChips(k,[]));['aud_age','aud_age_min','aud_gender','aud_gender_min','aud_loc_min'].forEach(k=>$('#'+k).value='');run();return}
+ $$('#tgs .chip').forEach(c=>c.dataset.key!==tg.key&&c.classList.remove('on'));
+ ['categories','interests','values','lifestyles','tones'].forEach(k=>setChips(k,f[k]||[]));setChips('platforms',f.platform||[]);
+ $('#aud_age').value=f.aud_age||'';$('#aud_age_min').value=f.aud_age_min??'';$('#aud_gender').value=f.aud_gender||'';$('#aud_gender_min').value=f.aud_gender_min??'';
+ if(f.aud_loc_min!=null){$('#aud_loc_min').value=f.aud_loc_min;if(!$('#aud_loc').value&&PLACE)$('#aud_loc').value=PLACE.name}
+ run();}
+
+function params(){const p=new URLSearchParams();if(PLACE){p.set('center',PLACE.name);p.set('lat',PLACE.lat);p.set('lon',PLACE.lon);p.set('radius_km',+$('#radius').value)}if(COLL)p.set('collection_id',COLL);
+ const push=(k,arr)=>arr.length&&p.set(k,arr.join(','));push('county',sel('counties'));push('country',sel('countries'));push('platform',sel('platforms'));push('tier',sel('tiers'));
+ ['followers_min','followers_max','er_min','q','gender','age_min','age_max','language','aud_age','aud_age_min','aud_gender','aud_gender_min','aud_loc','aud_loc_min'].forEach(k=>{const v=$('#'+k).value.trim();if(v)p.set(k,v)});
+ ['categories','interests','values','lifestyles','tones','audience_interests'].forEach(k=>push(k,sel(k)));if($('#match_all').checked)p.set('match','all');if($('#enriched_only').checked)p.set('enriched_only','1');
+ p.set('sort',$('#sort').value);p.set('lang',lang);return p;}
+
+let runT;function run(){clearTimeout(runT);runT=setTimeout(doRun,120)}
+function renderFacets(res){if(!sel('counties').length&&!sel('countries').length)FACETS=res.facets||FACETS;const mk=(id,obj)=>{const on=sel(id);const keys=[...new Set([...Object.keys(obj).sort((a,b)=>obj[b]-obj[a]).slice(0,24),...on])];const box=$('#'+id);box.innerHTML='';keys.forEach(k=>{const b=document.createElement('button');b.className='chip'+(on.includes(k)?' on':'');b.dataset.key=k;b.textContent=`${k}${obj[k]?' · '+obj[k]:''}`;b.onclick=()=>{b.classList.toggle('on');run()};box.appendChild(b)})};mk('counties',FACETS.county||{});mk('countries',FACETS.country||{})}
+async function doRun(){const p=params();const res=await api('/api/search?'+p);RESULTS=res.items;$('#total').textContent=fmt(res.total);renderFacets(res);
+ $('#scope').textContent=(PLACE?`${PLACE.name} · ${$('#radius').value} ${t('within')}`:t('scope_all'))+(COLL?` · #${COLL}`:'');
+ renderTable();renderMap(res);$('#emptyNote').classList.toggle('hidden',res.total>0);$('#emptyNote').textContent=t('no_results');}
+
+function renderTable(){const tb=$('#results tbody');tb.innerHTML=RESULTS.map(r=>{const aa=r.audience_age||{},ag=r.audience_gender||{};const topAge=Object.entries(aa).sort((a,b)=>b[1]-a[1])[0];const topG=Object.entries(ag).sort((a,b)=>b[1]-a[1])[0];
+ const lab=(tab,k)=>{const o=(META[tab]||[]).find(x=>x.key===k);return o?o.label:k};
+ return `<tr class="r" data-id="${esc(r.id)}"><td><b>${esc(r.name||r.handle)}</b><br><span class="muted">@${esc(r.handle)}</span>${r.source==='demo'?' <span class="tag demo">demo</span>':''}${r.enriched?'':' <span class="tag" title="nincs címkézve">∅</span>'}</td>
+ <td><span class="tag p">${esc(r.platform)}</span></td><td>${esc(r.city||'')}<br><span class="muted">${esc(r.county||'')}</span></td><td class="right">${r.distance_km!=null?r.distance_km:''}</td>
+ <td class="right">${fmt(r.followers)}<br><span class="muted">${r.tier}</span></td><td class="right">${r.engagement_rate??''}</td>
+ <td>${(r.categories||[]).slice(0,3).map(c=>`<span class="tag">${esc(lab('categories',c))}</span>`).join('')}<br>${(r.lifestyles||[]).slice(0,2).map(c=>`<span class="tag" style="background:#F6EEE9;color:#6B4A3A">${esc(lab('lifestyles',c))}</span>`).join('')}</td>
+ <td class="muted">${topAge?`${topAge[0]} · ${Math.round(topAge[1])}%`:''}${topG?`<br>${lab('genders',topG[0])} ${Math.round(topG[1])}%`:''}</td></tr>`}).join('');
+ tb.querySelectorAll('tr.r').forEach(tr=>tr.onclick=()=>openDrawer(tr.dataset.id));}
+
+function renderMap(res){if(!map){map=L.map('map',{scrollWheelZoom:false}).setView([47.16,19.5],7);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);layer=L.layerGroup().addTo(map)}
+ layer.clearLayers();if(circle){circle.remove();circle=null}
+ const groups={};RESULTS.forEach(r=>{if(r.lat==null)return;const k=r.lat.toFixed(3)+','+r.lon.toFixed(3);(groups[k]=groups[k]||{lat:r.lat,lon:r.lon,city:r.city,items:[]}).items.push(r)});
+ Object.values(groups).forEach(g=>{const n=g.items.length;L.circleMarker([g.lat,g.lon],{radius:6+Math.min(18,Math.sqrt(n)*3),color:'#0F766E',weight:1.5,fillColor:'#0F766E',fillOpacity:.45})
+  .bindPopup(`<b>${esc(g.city)}</b> · ${n}<br>${g.items.slice(0,6).map(r=>`@${esc(r.handle)} (${fmt(r.followers)})`).join('<br>')}${n>6?'<br>…':''}`).addTo(layer)});
+ if(res.center){if(res.radius_km!=null){circle=L.circle([res.center.lat,res.center.lon],{radius:res.radius_km*1000,color:'#E0533D',weight:1.5,fillOpacity:.05}).addTo(map);map.fitBounds(circle.getBounds().pad(.2))}else map.setView([res.center.lat,res.center.lon],10)}
+ else if(Object.keys(groups).length){map.fitBounds(L.featureGroup(layer.getLayers()).getBounds().pad(.2))}}
+
+function dist(obj,tab){const ent=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);if(!ent.length)return '<span class="muted">—</span>';const lab=k=>{const o=tab&&(META[tab]||[]).find(x=>x.key===k);return o?o.label:k};
+ return '<div class="dist">'+ent.slice(0,7).map(([k,v])=>`<div><span>${esc(lab(k))}</span><i style="width:${Math.min(100,v)*1.6}px"></i><b>${Math.round(v)}%</b></div>`).join('')+'</div>'}
+async function openDrawer(id){const r=await api('/api/influencer/'+encodeURIComponent(id));const lab=(tab,k)=>{const o=(META[tab]||[]).find(x=>x.key===k);return o?o.label:k};const tags=(tab,arr)=>(arr||[]).map(k=>`<span class="tag">${esc(lab(tab,k))}</span>`).join('')||'<span class="muted">—</span>';
+ $('#drawerBody').innerHTML=`<h2>${esc(r.name||r.handle)}</h2><a href="${esc(r.url)}" target="_blank" rel="noopener">@${esc(r.handle)} · ${esc(r.platform)} ↗</a>
+ <p class="muted" style="margin:10px 0">${esc(r.bio||'')}</p>
+ <div class="kv"><span>${t('d_followers')}</span><b>${fmt(r.followers)} <span class="muted">${r.tier}</span></b><span>${t('d_er')}</span><b>${r.engagement_rate??'—'} %</b><span>${t('d_views')}</span><b>${fmt(r.avg_views)||'—'}</b>
+ <span>${t('center')}</span><b>${esc(r.city||'—')} · ${esc(r.county||'')} · ${esc(r.region||'')}</b><span>${t('d_gender')} / ${t('d_age')}</span><b>${esc(lab('genders',r.gender)||'—')} · ${r.age??'—'}</b><span>${t('d_lang')}</span><b>${esc(r.language||'')}</b>
+ <span>${t('d_price')}</span><b>${r.price_estimate_huf?fmt(r.price_estimate_huf)+' Ft':'—'}</b><span>${t('d_contact')}</span><b>${esc(r.contact_email||'—')}</b><span>${t('d_source')}</span><b>${esc(r.source)} ${r.verified?'✓':''}</b></div>
+ <h3>${t('categories')}</h3>${tags('categories',r.categories)}<h3>${t('interests')}</h3>${tags('interests',r.interests)}<h3>${t('values')}</h3>${tags('values',r.values)}<h3>${t('lifestyles')}</h3>${tags('lifestyles',r.lifestyles)}<h3>${t('tones')}</h3>${tags('tones',r.tones)}
+ <h3>${t('aud_age_h')}</h3>${dist(r.audience_age)}<h3>${t('aud_gender_h')}</h3>${dist(r.audience_gender,'genders')}<h3>${t('aud_loc_h')}</h3>${dist(r.audience_locations)}<h3>${t('aud_interests')}</h3>${tags('interests',r.audience_interests)}
+ <p class="muted">${esc(r.notes||'')}</p><div class="bar" style="margin-top:14px"><button class="btn sm warm" id="enrichOne">${t('enrich_one')}</button><button class="btn sm danger" id="delOne">${t('remove')}</button></div>`;
+ $('#drawer').classList.add('open');$('#enrichOne').onclick=async()=>{const j=await api('/api/enrich',{body:{ids:[r.id],only_unenriched:false}});await waitJob(j.job);openDrawer(r.id);run()};
+ $('#delOne').onclick=async()=>{if(!confirm('?'))return;await fetch('/api/influencer/'+encodeURIComponent(r.id),{method:'DELETE'});$('#drawer').classList.remove('open');run()}}
+
+async function waitJob(id,el){for(;;){const j=await api('/api/jobs/'+id);const txt=(j.log||[]).slice(-40).join('\n')||'…';$('#joblog').textContent=txt;if(el){el.textContent=txt;el.scrollTop=el.scrollHeight}if(j.status!=='running'){toast(j.status==='done'?JSON.stringify(j.result):'Hiba: '+j.result);return j}await new Promise(r=>setTimeout(r,1200))}}
+
+// --- events
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('section.panel').forEach(s=>s.classList.toggle('hidden',s.id!=='tab-'+b.dataset.tab));if(b.dataset.tab==='lists')loadLists();if(b.dataset.tab==='audit')loadAudit();if(b.dataset.tab==='sources')loadMeta()});
+$$('.langs button').forEach(b=>b.onclick=async()=>{lang=b.dataset.lang;localStorage.setItem('lang',lang);applyLang();$('#place').placeholder=t('place_ph');await loadMeta();if(COLL)$('#collSel').onchange();else{if(PLACE)loadTowns();run()}});
+$('#radius').oninput=e=>{$('#radiusv').textContent=e.target.value;loadTowns();run()};$('#maxTowns').oninput=loadTowns;
+['followers_min','followers_max','er_min','q','gender','age_min','age_max','language','aud_age','aud_age_min','aud_gender','aud_gender_min','aud_loc','aud_loc_min','match_all','enriched_only','sort'].forEach(k=>{$('#'+k).addEventListener('input',run);$('#'+k).addEventListener('change',run)});
+$('#run').onclick=doRun;$('#reset').onclick=()=>{$$('aside input[type=text],aside input[type=number]').forEach(i=>{if(!['place','maxTowns','dterms'].includes(i.id))i.value=''});$$('aside select').forEach(s=>{if(s.id!=='collSel')s.value=''});['match_all','enriched_only'].forEach(k=>$('#'+k).checked=false);$$('aside .chip').forEach(c=>{if(!c.closest('#dplatforms'))c.classList.remove('on')});run()};
+$$('#results th[data-s]').forEach(th=>th.onclick=()=>{$('#sort').value=th.dataset.s;run()});
+$('#exportCsv').onclick=()=>location.href='/api/export.csv?'+params();
+$('#saveList').onclick=async()=>{const name=prompt(t('list_name'),`${PLACE?PLACE.name:t('all')} · ${sel('tgs').join(',')||''} ${new Date().toLocaleDateString()}`);if(!name)return;await api('/api/lists',{body:{name,filters:Object.fromEntries(params()),ids:RESULTS.map(r=>r.id)}});toast(t('saved'))};
+$('#enrichBtn').onclick=async()=>{const j=await api('/api/enrich',{body:{ids:RESULTS.map(r=>r.id),max:50}});toast(`${j.count} → LLM`);$$('.tabs button')[1].click();await waitJob(j.job);run()};
+$('#closeDrawer').onclick=()=>$('#drawer').classList.remove('open');
+$('#importBtn').onclick=async()=>{const f=$('#file').files[0];if(!f)return;const text=await f.text();const body=f.name.endsWith('.json')?{items:JSON.parse(text),source:'import:'+f.name,collection_id:COLL}:{csv:text,source:'import:'+f.name,collection_id:COLL};const j=await api('/api/import',{body});toast('+'+j.added);loadMeta();run()};
+$('#enrichAll').onclick=async()=>{const j=await api('/api/enrich',{body:{filters:{},max:+$('#enrichMax').value}});toast(`${j.count} → LLM`);await waitJob(j.job);loadMeta();run()};
+$('#manualAdd').onclick=async()=>{await api('/api/influencer',{body:{platform:$('#mnplat').value,handle:$('#mnhandle').value,name:$('#mnname').value,city:$('#mncity').value,bio:$('#mnbio').value,source:'manual',collection_id:COLL,country:PLACE&&PLACE.country}});toast('+1');loadMeta();run()};
+
+async function loadLists(){const ls=await api('/api/lists');$('#listsBox').innerHTML=ls.length?ls.map(l=>`<div class="card"><div class="bar"><b>${esc(l.name)}</b><span class="muted">${l.count} · ${new Date(l.created_at*1000).toLocaleString()}</span><div class="grow"></div>
+ <a class="btn ghost sm" href="/api/lists/${l.id}?format=csv">CSV</a><button class="btn sm" data-open="${l.id}">${t('open')}</button><button class="btn sm danger" data-del="${l.id}">${t('delete')}</button></div><div class="muted">${esc(JSON.stringify(l.filters))}</div><div id="list-${l.id}"></div></div>`).join(''):`<div class="note">—</div>`;
+ $$('[data-del]').forEach(b=>b.onclick=async()=>{await fetch('/api/lists/'+b.dataset.del,{method:'DELETE'});loadLists()});
+ $$('[data-open]').forEach(b=>b.onclick=async()=>{const items=await api('/api/lists/'+b.dataset.open);$('#list-'+b.dataset.open).innerHTML='<table>'+items.map(r=>`<tr class="r" data-id="${esc(r.id)}"><td>${esc(r.name||r.handle)} <span class="muted">@${esc(r.handle)}</span></td><td>${esc(r.platform)}</td><td>${esc(r.city||'')}</td><td class="right">${fmt(r.followers)}</td></tr>`).join('')+'</table>';$$('#list-'+b.dataset.open+' tr.r').forEach(tr=>tr.onclick=()=>openDrawer(tr.dataset.id))})}
+async function loadAudit(){const a=await api('/api/audit');$('#auditBox').textContent=a.map(x=>`${new Date(x.ts*1000).toLocaleString()}  ${x.action.padEnd(8)} ${x.detail}`).join('\n')||'—'}
+
+(async()=>{applyLang();await loadMeta();$('#place').placeholder=t('place_ph');const first=(META.collections||[]).find(c=>c.status==='done');if(first){COLL=first.id;$('#collSel').value=first.id;$('#collSel').onchange()}else run()})();
+</script></body></html>
