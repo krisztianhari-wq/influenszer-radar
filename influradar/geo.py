@@ -225,6 +225,6 @@ def assign_countries(towns: list[dict], default_cc: str = "", progress=None) -> 
 
 
 def settlements_within(lat: float, lon: float, km: float) -> list[dict]:
-    """Offline magyar települések a sugáron belül, távolság szerint (demo-generátorhoz)."""
+    """Offline magyar települések a sugáron belül, távolság szerint (offline segéd)."""
     return sorted((dict(s, distance_km=round(haversine_km(lat, lon, s["lat"], s["lon"]), 1)) for s in settlements()
                    if haversine_km(lat, lon, s["lat"], s["lon"]) <= km), key=lambda s: s["distance_km"])

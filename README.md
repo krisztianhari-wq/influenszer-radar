@@ -22,7 +22,7 @@ A kész app az adatokat a felhasználói mappában tartja (macOS `~/Library/Appl
 | Csoport | Szűrők |
 |---|---|
 | **Hely** | bármely európai település (OpenStreetMap Nominatim autocomplete; 149 magyar város offline is), **sugár 5–250 km** (Haversine); a körben lévő városokat az OSM Overpass adja népesség szerint; ország és megye/körzet chipek a gyűjtött adatból (facet) |
-| **Gyűjtés** | források pipálhatók: DuckDuckGo (valós jelöltek), Demo (szintetikus, a körzet városaira), Modash (kulccsal); max. város a körben, extra kulcsszavak, automatikus LLM-címkézés; leállítható; korábbi gyűjtések listája |
+| **Gyűjtés** | források pipálhatók: DuckDuckGo (valós jelöltek), Modash (kulccsal); max. város a körben, extra kulcsszavak, automatikus LLM-címkézés; leállítható; korábbi gyűjtések listája |
 | **Célcsoport-előbeállítás** | egy kattintás több szűrőt állít be: Z generáció, fiatal felnőttek, kisgyerekes családok, egyetemisták, sportos/egészségtudatos, gamerek/tech, nők 25–44, prémium, árérzékeny, KKV/vállalkozók, early adopterek, lokálpatrióta, zöld, aktív 45+ (`taxonomy.TARGET_GROUPS`, bővíthető) |
 | **Alap** | platform (IG/TikTok/YT/FB/X/LinkedIn/Twitch), méret (nano/micro/mid/macro/mega), követő min/max, engagement % min, szabad szó |
 | **Influenszer demográfia** | nem, kor min/max, nyelv |
@@ -37,8 +37,7 @@ Influenszer-adatra **nincs ingyenes hivatalos API**, a platformok scrapelése pe
 
 | Forrás | Mit ad | Költség |
 |---|---|---|
-| **Demo** | szintetikus, `*_demo` handle-ű profilok a kiválasztott körzet városaira, teljes pszichográfiával és közönségeloszlással – a szűrők kipróbálására bárhol Európában. Nem valós személyek. | – |
-| **DuckDuckGo felderítés** | a körzet városaira `site:instagram.com "Graz" influencer` típusú keresések **az ország nyelvén + angolul** (30+ nyelv szótára a `discover.py`-ban, DDG-régiókóddal) → nyilvános profil-URL, név, snippet, követőszám ha a snippetben szerepel. Csak jelölt-lista; közönségadat nincs. | ingyenes |
+| **Webkeresés-felderítés** | a körzet városaira `site:instagram.com "Graz" influencer` típusú keresések **az ország nyelvén + angolul** (30+ nyelv szótára a `discover.py`-ban, DDG-régiókóddal) → nyilvános profil-URL, név, snippet, követőszám ha a snippetben szerepel. Csak jelölt-lista; közönségadat nincs. Háttér: **Brave Search API** ha van `BRAVE_SEARCH_API_KEY` (hivatalos, kulcsos; ingyenes sáv 2000 lekérdezés/hó), különben DuckDuckGo. **Figyelem:** a kulcs nélküli keresőmotorok az automatikus lekérdezéseket néhány gyűjtés után órákra korlátozhatják (bot-védelem); ekkor a gyűjtés „blocked” státusszal leáll és a felület kiírja. CAPTCHA-kerülés nincs és nem is lesz. | ingyenes / Brave API ingyenes sáv |
 | **LLM-dúsítás** | bio/snippet → kategória, érdeklődés, értékek, életstílus, hangnem, nem; a közönség kor/nem csak *jelölt becslés*. Háttér sorrendben: `ANTHROPIC_API_KEY` → Claude Code CLI (`claude -p`, előfizetéssel) → Ollama (offline) → szabályalapú kulcsszó. A `notes` mező mutatja, melyik írta. | API-díj / 0 |
 | **CSV / JSON import** | bármely adatszolgáltató (Modash, HypeAuditor, Upfluence, Kolsquare, ügynökségi lista) exportja. Sablon: `data/import_sablon.csv` vagy a GUI-ból. Város → megye/koordináta automatikus. | a szolgáltató díja |
 | **Modash Discovery API** | adapter (`influradar/modash.py`): hely + követő szűrés náluk, profil-riporttal közönség-demográfia. `MODASH_API_KEY` a `.env`-ben. Mezőleképezés best-effort, éles kulccsal tesztelendő. | ~$300+/hó |
@@ -49,13 +48,12 @@ Fizetős alternatívák, amelyekhez csak import van: HypeAuditor, Upfluence, Kol
 ## CLI
 
 ```
-.venv/bin/python -m influradar collect "Graz" --radius 60 --sources ddg,demo --max-towns 6 --enrich
+.venv/bin/python -m influradar collect "Graz" --radius 60 --sources ddg --max-towns 6 --enrich
 .venv/bin/python -m influradar collect "Kraków, Poland" --radius 40 --sources ddg --platforms instagram,tiktok --terms fitness
 .venv/bin/python -m influradar import export.csv --source modash
 .venv/bin/python -m influradar enrich --max 30
 .venv/bin/python -m influradar search collection_id=1 categories=fitness aud_age=18-24 aud_age_min=35 --csv > list.csv
-.venv/bin/python -m influradar demo -n 600        # régi, országos magyar demo (opcionális)
-.venv/bin/python -m influradar stats | clear demo
+.venv/bin/python -m influradar stats | clear ddg
 ```
 
 ## Importformátum
@@ -73,7 +71,6 @@ Csak 127.0.0.1-en fut. Külső hívások: Nominatim (helykeresés, 1 kérés/mp)
 influradar/geo.py        Nominatim helykeresés, Overpass városok, ország→nyelv, Haversine, magyar CSV tartalék
 influradar/taxonomy.py   szótárak + célcsoport-előbeállítások (HU/EN)
 influradar/db.py         SQLite, normalizálás, szűrőmotor, CSV
-influradar/demo.py       szintetikus adat
 influradar/discover.py   DuckDuckGo felderítés városlistára, 30+ nyelv kulcsszavai
 influradar/modash.py     fizetős API adapter
 influradar/llm.py        dúsítás (api/cli/ollama/rules)

@@ -12,11 +12,13 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import demo, discover, geo, llm, modash
+from . import discover, geo, llm, modash
 from .db import Store, search, to_csv
 from .taxonomy import (AGE_BUCKETS, CATEGORIES, GENDERS, INTERESTS, LIFESTYLES, PLATFORMS, TARGET_GROUPS, TIERS, TONES, VALUES, as_options)
 
 STORE = Store()
+STORE.con.execute("UPDATE collections SET status='interrupted' WHERE status='running'")
+STORE.con.commit()
 JOBS: dict[str, dict] = {}
 from .paths import resources
 
@@ -40,7 +42,7 @@ def _job(fn, *args, **kw) -> str:
 
 
 def job_collect(b: dict, progress, stop):
-    """Helyszín + sugár → városok → források (ddg / demo / modash) → opcionális LLM-dúsítás. Minden rekord collection_id-vel."""
+    """Helyszín + sugár → városok → források (ddg / modash) → opcionális LLM-dúsítás. Minden rekord collection_id-vel."""
     lat, lon, radius = float(b["lat"]), float(b["lon"]), float(b.get("radius_km") or 30)
     label = b.get("label") or f"{b.get('name', '')} · {int(radius)} km"
     sources = b.get("sources") or ["ddg"]
@@ -56,10 +58,6 @@ def job_collect(b: dict, progress, stop):
         STORE.update_collection(cid, towns=towns)
         progress("városok / towns: " + ", ".join(f"{t['name']} ({t['country']})" for t in towns))
         total = 0
-        if "demo" in sources:
-            recs = demo.generate_for_towns(towns, int(b.get("demo_per_town") or 12), collection_id=cid)
-            total += STORE.upsert(recs, source="demo")
-            progress(f"demo: {len(recs)} szintetikus profil")
         if "modash" in sources and modash.available():
             for t in towns[:3]:
                 for plat in b.get("platforms") or ["instagram"]:
@@ -71,21 +69,28 @@ def job_collect(b: dict, progress, stop):
                         progress(f"modash {plat} {t['name']}: {len(recs)}")
                     except Exception as e:  # noqa: BLE001
                         progress(f"modash hiba: {e}")
+        blocked = None
         if "ddg" in sources:
-            recs = discover.discover(towns, b.get("platforms") or ["instagram", "tiktok", "youtube"], b.get("terms") or [],
-                                     terms_per_lang=int(b.get("terms_per_lang") or 2), progress=progress, stop=stop)
+            try:
+                recs = discover.discover(towns, b.get("platforms") or ["instagram", "tiktok", "youtube"], b.get("terms") or [],
+                                         terms_per_lang=int(b.get("terms_per_lang") or 2), progress=progress, stop=stop)
+            except discover.SearchBlocked as e:
+                blocked = str(e)
+                progress("⛔ " + blocked)
+                recs = []
+            src = "brave" if discover.search_backend() == "brave" else "ddg"
             for r in recs:
                 r["collection_id"] = cid
                 r["_geocode"] = False
-            total += STORE.upsert(recs, source="ddg")
-            progress(f"ddg: {len(recs)} jelölt / candidates")
-        STORE.update_collection(cid, status="done", count=total)
+            total += STORE.upsert(recs, source=src)
+            progress(f"{src}: {len(recs)} jelölt / candidates")
+        STORE.update_collection(cid, status="blocked" if blocked else ("stopped" if stop() else "done"), count=total, log=blocked or "")
         if b.get("enrich") and "ddg" in sources:
             ids = [r["id"] for r in STORE.all() if r.get("collection_id") == cid and not r.get("enriched")][: int(b.get("enrich_max") or 40)]
             progress(f"LLM-dúsítás: {len(ids)} profil · {llm.backends()[0]}")
             job_enrich(ids, progress, stop)
         STORE.log("collect", f"#{cid} {label}: {total} profil, források={','.join(sources)}")
-        return {"collection_id": cid, "count": total, "towns": [t["name"] for t in towns]}
+        return {"collection_id": cid, "count": total, "towns": [t["name"] for t in towns], "blocked": blocked}
     except Exception:
         STORE.update_collection(cid, status="error")
         raise
@@ -114,6 +119,7 @@ def meta(lang: str) -> dict:
         "values": as_options(VALUES, lang), "lifestyles": as_options(LIFESTYLES, lang), "tones": as_options(TONES, lang),
         "target_groups": [{"key": k, "label": v["label"][0 if lang == "hu" else 1], "filters": v["filters"]} for k, v in TARGET_GROUPS.items()],
         "stats": STORE.stats(), "llm_backends": llm.backends(), "modash": modash.available(), "collections": STORE.collections(),
+        "search_backend": discover.search_backend(),
     }
 
 

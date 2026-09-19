@@ -1,11 +1,11 @@
-"""CLI: gui | demo | import | discover | enrich | search | export | stats | clear."""
+"""CLI: gui | collect | import | enrich | search | stats | clear."""
 from __future__ import annotations
 
 import argparse
 import json
 import sys
 
-from . import __version__, demo, llm
+from . import __version__, llm
 from .db import Store, import_file, search, to_csv
 
 
@@ -19,15 +19,13 @@ def main(argv=None):
     g.add_argument("--host", default="127.0.0.1", help="pl. 0.0.0.0 konténerben / LAN-on – csak megbízható hálózaton!")
     g.add_argument("--open", action="store_true", help="böngésző megnyitása / open browser")
     ap.add_argument("--version", action="version", version=f"influradar {__version__}")
-    d = sub.add_parser("demo", help="szintetikus demo-adatok betöltése")
-    d.add_argument("-n", type=int, default=600)
     i = sub.add_parser("import", help="CSV/JSON import")
     i.add_argument("path")
     i.add_argument("--source")
     dc = sub.add_parser("collect", help="körzeti gyűjtés: helyszín (bármely európai város) + sugár → források")
     dc.add_argument("place", help="pl. 'Graz' vagy 'Kraków, Poland'")
     dc.add_argument("--radius", type=float, default=30)
-    dc.add_argument("--sources", default="ddg", help="ddg,demo,modash")
+    dc.add_argument("--sources", default="ddg", help="ddg,modash")
     dc.add_argument("--platforms", default="instagram,tiktok,youtube")
     dc.add_argument("--terms", default="")
     dc.add_argument("--max-towns", type=int, default=8)
@@ -39,7 +37,7 @@ def main(argv=None):
     s.add_argument("kv", nargs="*")
     s.add_argument("--csv", action="store_true")
     sub.add_parser("stats")
-    c = sub.add_parser("clear", help="forrás törlése (demo, ddg, modash, import:...)")
+    c = sub.add_parser("clear", help="forrás törlése (ddg, modash, manual, import:...)")
     c.add_argument("source")
     a = ap.parse_args(argv)
     st = Store()
@@ -47,8 +45,6 @@ def main(argv=None):
     if a.cmd == "gui":
         from .webapp import serve
         serve(host=a.host, port=a.port, open_browser=a.open)
-    elif a.cmd == "demo":
-        print(st.upsert(demo.generate(a.n), source="demo"), "demo rekord betöltve")
     elif a.cmd == "import":
         print(import_file(st, a.path, a.source), "rekord importálva")
     elif a.cmd == "collect":

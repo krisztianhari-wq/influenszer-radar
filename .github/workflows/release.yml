@@ -20,9 +20,9 @@ jobs:
       - run: pip install -q -r requirements.txt
       - run: python -m compileall -q influradar
       - run: python -m influradar --version
-      - name: Smoke test (offline demo collection + search)
+      - name: Smoke test (offline import + search)
         run: |
-          python -m influradar demo -n 50
+          python -m influradar import data/import_sablon.csv
           python -m influradar search center=Debrecen radius_km=50 | head -3
 
   app:
