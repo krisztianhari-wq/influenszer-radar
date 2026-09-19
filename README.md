@@ -29,6 +29,8 @@ A kész app az adatokat a felhasználói mappában tartja (macOS `~/Library/Appl
 | **Pszichográfia** | tartalmi kategória (22), érdeklődés (20), értékek (15), életstílus (15), hangnem (10); „bármelyik” vagy „mind kell” illesztés |
 | **Célközönség** | közönség korcsoport + min. arány %, közönség nem + min. arány %, közönség lakhelye (település) + min. arány %, közönség érdeklődése |
 
+**Elérhetőségek** (`influradar/contacts.py`): a gyűjtés végén automatikusan, vagy a „Elérhetőségek kiegészítése” gombbal: (1) e-mail, telefon, más platform említése és weboldal/linktree kivonatolása a bio/snippet szövegből (az „(at)”-trükköket is érti); (2) azonos handle vagy név+város összekapcsolása platformok között; (3) a saját weboldal / link-hub nyilvános oldaláról `mailto:`, `tel:` és social linkek; (4) opcionálisan célzott webkeresés `"handle" email/kontakt/management` az ország nyelvén. Platformoldalt nem tölt le. A fejlécben látszik a kitöltöttség (✉ ☎ 🌐 ⇄), szűrő: „csak elérhetőséggel”.
+
 Rendezés: követő, ER, távolság, név. Export: CSV (Excel-kompatibilis, UTF-8 BOM). Mentett listák: szűrőkkel együtt, CSV-ben is letölthetők.
 
 ## Adatforrások – mi ingyenes, mi nem
@@ -58,7 +60,7 @@ Fizetős alternatívák, amelyekhez csak import van: HypeAuditor, Upfluence, Kol
 
 ## Importformátum
 
-Oszlopok: `platform, handle, name, city, bio, followers, engagement_rate, language, gender, age, categories, interests, values, lifestyles, tones, audience_age, audience_gender, audience_locations, audience_interests, contact_email, price_estimate_huf, verified`.
+Oszlopok: `platform, handle, name, city, country, bio, followers, engagement_rate, language, gender, age, categories, interests, values, lifestyles, tones, audience_age, audience_gender, audience_locations, audience_interests, contact_email, phone, website, links, price_estimate_huf, verified`. A `links` JSON: `{"tiktok": "handle", "youtube": "handle"}`.
 Listák pontosvesszővel (`fitness;food`), eloszlások `18-24:40;25-34:35` alakban (%). Kulcsok a `influradar/taxonomy.py` szótáraiból; ismeretlen kulcs megmarad, de a szűrő nem találja.
 
 ## Adatvédelem

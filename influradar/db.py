@@ -17,7 +17,7 @@ from .paths import data_dir
 DB_PATH = data_dir() / "radar.sqlite"
 
 LIST_FIELDS = ("categories", "interests", "values", "lifestyles", "tones", "audience_interests")
-DICT_FIELDS = ("audience_age", "audience_gender", "audience_locations")
+DICT_FIELDS = ("audience_age", "audience_gender", "audience_locations", "links")
 JSON_FIELDS = LIST_FIELDS + DICT_FIELDS
 
 COLUMNS = [
@@ -25,7 +25,7 @@ COLUMNS = [
     "followers", "engagement_rate", "avg_views", "posts_per_week", "language", "gender", "age",
     "categories", "interests", "values", "lifestyles", "tones",
     "audience_age", "audience_gender", "audience_locations", "audience_interests", "audience_language",
-    "contact_email", "price_estimate_huf", "verified", "source", "enriched", "notes", "updated_at",
+    "contact_email", "phone", "website", "links", "price_estimate_huf", "verified", "source", "enriched", "notes", "updated_at",
 ]
 
 SCHEMA = """
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS influencers (
   language TEXT, gender TEXT, age INTEGER,
   categories TEXT, interests TEXT, "values" TEXT, lifestyles TEXT, tones TEXT,
   audience_age TEXT, audience_gender TEXT, audience_locations TEXT, audience_interests TEXT, audience_language TEXT,
-  contact_email TEXT, price_estimate_huf INTEGER, verified INTEGER DEFAULT 0, source TEXT, enriched INTEGER DEFAULT 0,
+  contact_email TEXT, phone TEXT, website TEXT, links TEXT, price_estimate_huf INTEGER, verified INTEGER DEFAULT 0, source TEXT, enriched INTEGER DEFAULT 0,
   notes TEXT, updated_at REAL
 );
 CREATE INDEX IF NOT EXISTS ix_platform ON influencers(platform);
@@ -111,7 +111,9 @@ def normalize(rec: dict) -> dict:
     for k in LIST_FIELDS:
         r[k] = [x.lower() for x in _split(rec.get(k))]
     for k in DICT_FIELDS:
-        r[k] = _dist(rec.get(k))
+        r[k] = _loads(rec.get(k), {}) if k == "links" else _dist(rec.get(k))
+    if isinstance(r["links"], str):
+        r["links"] = {}
     for k in ("followers", "avg_views", "age", "price_estimate_huf"):
         try:
             r[k] = int(float(rec.get(k))) if rec.get(k) not in (None, "") else None
@@ -167,7 +169,7 @@ class Store:
         self.con.row_factory = sqlite3.Row
         self.con.executescript(SCHEMA)
         have = {r[1] for r in self.con.execute("PRAGMA table_info(influencers)")}
-        for col, typ in (("country", "TEXT"), ("collection_id", "INTEGER")):
+        for col, typ in (("country", "TEXT"), ("collection_id", "INTEGER"), ("phone", "TEXT"), ("website", "TEXT"), ("links", "TEXT")):
             if col not in have:
                 self.con.execute(f"ALTER TABLE influencers ADD COLUMN {col} {typ}")
         self.con.commit()
@@ -381,6 +383,8 @@ def search(store: Store, f: dict) -> dict:
             continue
         if f.get("enriched_only") in ("1", True, "true") and not r.get("enriched"):
             continue
+        if f.get("has_contact") in ("1", True, "true") and not (r.get("contact_email") or r.get("phone") or r.get("website") or r.get("links")):
+            continue
         if q and q not in " ".join(str(r.get(k) or "") for k in ("name", "handle", "bio", "city")).lower():
             continue
         # földrajz: körön belül
@@ -427,19 +431,25 @@ def search(store: Store, f: dict) -> dict:
     total = len(out)
     limit = int(_num(f.get("limit")) or 500)
     facets = {"county": {}, "country": {}, "platform": {}, "source": {}}
+    contact = {"email": 0, "phone": 0, "website": 0, "links": 0, "any": 0}
     for r in out:
+        for k, col in (("email", "contact_email"), ("phone", "phone"), ("website", "website"), ("links", "links")):
+            if r.get(col):
+                contact[k] += 1
+        if r.get("contact_email") or r.get("phone") or r.get("website") or r.get("links"):
+            contact["any"] += 1
         for k in facets:
             v = r.get(k) or ""
             if v:
                 facets[k][v] = facets[k].get(v, 0) + 1
-    return {"total": total, "center": center, "radius_km": radius, "items": out[:limit], "facets": facets}
+    return {"total": total, "center": center, "radius_km": radius, "items": out[:limit], "facets": facets, "contact": contact}
 
 
 def to_csv(items: list[dict]) -> str:
     buf = io.StringIO()
     cols = ["platform", "handle", "name", "url", "city", "county", "country", "distance_km", "followers", "tier", "engagement_rate",
             "avg_views", "language", "gender", "age", "categories", "interests", "values", "lifestyles", "tones",
-            "audience_age", "audience_gender", "audience_locations", "audience_interests", "contact_email", "price_estimate_huf", "source", "enriched", "bio"]
+            "audience_age", "audience_gender", "audience_locations", "audience_interests", "contact_email", "phone", "website", "links", "price_estimate_huf", "source", "enriched", "bio"]
     w = csv.writer(buf)
     w.writerow(cols)
     for r in items:

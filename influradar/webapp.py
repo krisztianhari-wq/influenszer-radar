@@ -12,7 +12,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import discover, geo, llm, modash
+from . import contacts, discover, geo, llm, modash
 from .db import Store, search, to_csv
 from .taxonomy import (AGE_BUCKETS, CATEGORIES, GENDERS, INTERESTS, LIFESTYLES, PLATFORMS, TARGET_GROUPS, TIERS, TONES, VALUES, as_options)
 
@@ -85,6 +85,11 @@ def job_collect(b: dict, progress, stop):
             total += STORE.upsert(recs, source=src)
             progress(f"{src}: {len(recs)} jelölt / candidates")
         STORE.update_collection(cid, status="blocked" if blocked else ("stopped" if stop() else "done"), count=total, log=blocked or "")
+        ids = [r["id"] for r in STORE.all() if r.get("collection_id") == cid]
+        if ids and not blocked:
+            progress(f"elérhetőségek / contacts: {len(ids)} profil (kivonatolás, összekapcsolás, weboldalak)")
+            st = contacts.enrich_contacts(STORE, ids, web_search=bool(b.get("contact_search")), fetch_sites=True, progress=progress, stop=stop)
+            progress(f"elérhetőség: email {st['email']}, tel {st['phone']}, web {st['website']}, linkek {st['links']}")
         if b.get("enrich") and "ddg" in sources:
             ids = [r["id"] for r in STORE.all() if r.get("collection_id") == cid and not r.get("enriched")][: int(b.get("enrich_max") or 40)]
             progress(f"LLM-dúsítás: {len(ids)} profil · {llm.backends()[0]}")
@@ -94,6 +99,12 @@ def job_collect(b: dict, progress, stop):
     except Exception:
         STORE.update_collection(cid, status="error")
         raise
+
+
+def job_contacts(ids, web_search, fetch_sites, progress, stop=None):
+    st = contacts.enrich_contacts(STORE, ids, web_search=web_search, fetch_sites=fetch_sites, progress=progress, stop=stop)
+    STORE.log("contacts", f"{st['processed']} profil: email {st['email']}, tel {st['phone']}, web {st['website']}, linkek {st['links']}, keresés {st['searched']}")
+    return st
 
 
 def job_enrich(ids, progress, stop=None):
@@ -212,6 +223,10 @@ class Handler(BaseHTTPRequestHandler):
                     ids = [i for i in ids if not (STORE.get(i) or {}).get("enriched")]
                 mx = int(b.get("max") or 50)
                 return self._json({"job": _job(job_enrich, ids[:mx]), "count": min(len(ids), mx)})
+            if u.path == "/api/contacts":
+                ids = b.get("ids") or [r["id"] for r in search(STORE, dict(b.get("filters") or {}, limit=100000))["items"]]
+                mx = int(b.get("max") or 100)
+                return self._json({"job": _job(job_contacts, ids[:mx], bool(b.get("web_search")), bool(b.get("fetch_sites", True))), "count": min(len(ids), mx)})
             if u.path == "/api/lists":
                 lid = STORE.create_list(b.get("name") or f"List {time.strftime('%Y-%m-%d %H:%M')}", b.get("filters") or {}, b.get("ids") or [])
                 return self._json({"id": lid})

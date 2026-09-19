@@ -36,6 +36,10 @@ def main(argv=None):
     s = sub.add_parser("search", help="szűrés; kulcs=érték párok, pl. center=Graz radius_km=40 collection_id=1 categories=fitness aud_age=18-24 aud_age_min=35")
     s.add_argument("kv", nargs="*")
     s.add_argument("--csv", action="store_true")
+    ct = sub.add_parser("contacts", help="elérhetőségek kiegészítése (kivonatolás, összekapcsolás, weboldal, --web célzott keresés)")
+    ct.add_argument("--web", action="store_true")
+    ct.add_argument("--max", type=int, default=200)
+    ct.add_argument("--collection", type=int)
     sub.add_parser("stats")
     c = sub.add_parser("clear", help="forrás törlése (ddg, modash, manual, import:...)")
     c.add_argument("source")
@@ -75,6 +79,10 @@ def main(argv=None):
             for r in res["items"][:50]:
                 print(f"{r['platform']:9s} @{r['handle']:28s} {r.get('city') or '':18s} {r.get('distance_km') if r.get('distance_km') is not None else '':>6} km "
                       f"{(r.get('followers') or 0):>9,} ER {r.get('engagement_rate') or 0:>5} {','.join(r.get('categories') or [])}")
+    elif a.cmd == "contacts":
+        from . import contacts
+        ids = [r["id"] for r in st.all() if not a.collection or r.get("collection_id") == a.collection][: a.max]
+        print(json.dumps(contacts.enrich_contacts(st, ids, web_search=a.web, progress=lambda m: print("·", m, file=sys.stderr)), ensure_ascii=False))
     elif a.cmd == "stats":
         print(json.dumps(st.stats(), ensure_ascii=False, indent=1))
     elif a.cmd == "clear":
