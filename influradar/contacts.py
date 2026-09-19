@@ -83,7 +83,8 @@ def extract(text: str) -> dict:
     for u in URL_RE.findall(text):
         u = u if u.lower().startswith("http") else "https://" + u
         host = urllib.parse.urlparse(u).netloc.lower()
-        if host and not any(s in host for s in SKIP_HOSTS) and u not in out["websites"]:
+        tld = host.rsplit(".", 1)[-1] if "." in host else ""
+        if host and tld in TLDS and not any(s in host for s in SKIP_HOSTS) and "spotify" not in host and u not in out["websites"]:
             out["websites"].append(u.rstrip(".,);"))
     return out
 
