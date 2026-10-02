@@ -28,3 +28,21 @@ def data_dir() -> Path:
         p = resources() / "data"
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def load_env() -> list[str]:
+    """.env betöltése (KEY=VALUE sorok) a felhasználói adatmappából és a repo gyökeréből; a már beállított változót nem írja felül."""
+    loaded = []
+    for f in (data_dir() / ".env", resources() / ".env", Path.cwd() / ".env"):
+        if not f.is_file():
+            continue
+        for line in f.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+                loaded.append(k)
+    return loaded

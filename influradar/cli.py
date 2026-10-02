@@ -10,6 +10,8 @@ from .db import Store, import_file, search, to_csv
 
 
 def main(argv=None):
+    from .paths import load_env
+    load_env()
     if argv is None and len(sys.argv) == 1 and getattr(sys, "frozen", False):
         argv = ["gui", "--open"]  # dupla-klikk: GUI + böngésző
     ap = argparse.ArgumentParser(prog="influradar", description="Influenszer Radar – helyi influenszer-kereső")
