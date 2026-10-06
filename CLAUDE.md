@@ -4,7 +4,7 @@ Helyi európai influenszer-kereső: helyszín + km-sugár → igény szerinti gy
 
 ## Indítás és teszt
 - `./run.sh` → http://127.0.0.1:8790 (venv-et csinál `/opt/homebrew/bin/python3.14`-gyel, ha nincs, betölti a `.env`-et). CLI: `.venv/bin/python -m influradar collect|import|enrich|search|stats|clear` (példák a README-ben).
-- launch.json: `radar-gui` (`~/Claude_code/.claude/launch.json`). Figyelem: a konfig `port` mezője 8795, az app viszont 8790-en indul (`--port 8790`) – a kettőt egyeztetni kell, különben a preview rossz portot vár.
+- launch.json: `radar-gui` (`~/Claude_code/.claude/launch.json`) → 127.0.0.1:8799 (`--port 8799`, hogy ne ütközzön a 8790-es alapértékkel).
 - Adat: repóból futtatva `./data/` (`radar.sqlite`, `cache/`), csomagolt appban a felhasználói mappa (`influradar/paths.py`); `INFLURADAR_DATA` felülírja, `INFLURADAR_USERDIR=1` a felhasználói mappát kényszeríti.
 - Automatikus teszt nincs. Kézi füstteszt: GUI-ban egy kis körzet (pl. Graz, 20 km, 2 város) DDG-gyűjtése – de takarékosan, lásd Buktatók.
 
@@ -32,4 +32,4 @@ Helyi európai influenszer-kereső: helyszín + km-sugár → igény szerinti gy
 - A Modash-adapter mezőleképezése best-effort, éles kulccsal még nem tesztelt.
 
 ## Nyitott
-- Modash éles teszt; launch.json `radar-gui` port-eltérés javítása.
+- Modash éles teszt.
