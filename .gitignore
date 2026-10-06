@@ -6,3 +6,4 @@ data/cache/
 .DS_Store
 build/
 dist/
+CLAUDE.local.md
